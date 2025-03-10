@@ -125,9 +125,9 @@ func (t *table) Sync() error {
 
 // MigrateTable processes the entries in a given table in sequence
 // converting them to a new format if they're of an old format.
-func (t *table) MigrateTable(kind string, convert convertLegacyFn) error {
-	return t.db.MigrateTable(kind, convert)
-}
+// func (t *table) MigrateTable(kind string, convert convertLegacyFn) error {
+// 	return t.db.MigrateTable(kind, convert)
+// }
 
 // AncientDatadir returns the ancient datadir of the underlying database.
 func (t *table) AncientDatadir() (string, error) {
@@ -158,8 +158,12 @@ func (t *table) NewIterator(prefix []byte, start []byte) ethdb.Iterator {
 }
 
 // Stat returns a particular internal stat of the database.
-func (t *table) Stat(property string) (string, error) {
-	return t.db.Stat(property)
+func (t *table) Stat() (string, error) {
+	return t.db.Stat()
+}
+
+func (t *table) DeleteRange(start, end []byte) error {
+	return t.db.DeleteRange(start, end)
 }
 
 // Compact flattens the underlying data store for the given key range. In essence,
@@ -213,9 +217,9 @@ func (t *table) NewBatchWithSize(size int) ethdb.Batch {
 // NewSnapshot creates a database snapshot based on the current state.
 // The created snapshot will not be affected by all following mutations
 // happened on the database.
-func (t *table) NewSnapshot() (ethdb.Snapshot, error) {
-	return t.db.NewSnapshot()
-}
+// func (t *table) NewSnapshot() (ethdb.Snapshot, error) {
+// 	return t.db.NewSnapshot()
+// }
 
 // tableBatch is a wrapper around a database batch that prefixes each key access
 // with a pre-configured string.

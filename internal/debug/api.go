@@ -45,9 +45,10 @@ import (
 	"sync"
 	"time"
 
+	"log/slog"
+
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/hashicorp/go-bexpr"
-	"golang.org/x/exp/slog"
 )
 
 // Handler is the global debugging handler.

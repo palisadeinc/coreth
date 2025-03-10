@@ -394,7 +394,7 @@ func (vm *VM) Initialize(
 	}
 
 	// Enable debug-level metrics that might impact runtime performance
-	metrics.EnabledExpensive = vm.config.MetricsExpensiveEnabled
+	// metrics.EnabledExpensive = vm.config.MetricsExpensiveEnabled
 
 	vm.toEngine = toEngine
 	vm.shutdownChan = make(chan struct{}, 1)
@@ -435,9 +435,11 @@ func (vm *VM) Initialize(
 
 	// If the Durango is activated, activate the Warp Precompile at the same time
 	if g.Config.DurangoBlockTimestamp != nil {
-		g.Config.PrecompileUpgrades = append(g.Config.PrecompileUpgrades, params.PrecompileUpgrade{
-			Config: warpcontract.NewDefaultConfig(g.Config.DurangoBlockTimestamp),
-		})
+		g.Config.PrecompileUpgrades = append(
+			g.Config.PrecompileUpgrades, params.PrecompileUpgrade{
+				Config: warpcontract.NewDefaultConfig(g.Config.DurangoBlockTimestamp),
+			},
+		)
 	}
 
 	// Set the Avalanche Context on the ChainConfig
@@ -543,9 +545,13 @@ func (vm *VM) Initialize(
 	if err != nil {
 		return fmt.Errorf("failed to initialize p2p network: %w", err)
 	}
-	vm.p2pValidators = p2p.NewValidators(p2pNetwork.Peers, vm.ctx.Log, vm.ctx.SubnetID, vm.ctx.ValidatorState, maxValidatorSetStaleness)
+	vm.p2pValidators = p2p.NewValidators(
+		p2pNetwork.Peers, vm.ctx.Log, vm.ctx.SubnetID, vm.ctx.ValidatorState, maxValidatorSetStaleness,
+	)
 	vm.networkCodec = message.Codec
-	vm.Network = peer.NewNetwork(p2pNetwork, appSender, vm.networkCodec, chainCtx.NodeID, vm.config.MaxOutboundActiveRequests)
+	vm.Network = peer.NewNetwork(
+		p2pNetwork, appSender, vm.networkCodec, chainCtx.NodeID, vm.config.MaxOutboundActiveRequests,
+	)
 	vm.client = peer.NewNetworkClient(vm.Network)
 
 	// Initialize warp backend
@@ -624,16 +630,18 @@ func (vm *VM) Initialize(
 
 	vm.setAppRequestHandlers()
 
-	vm.StateSyncServer = NewStateSyncServer(&stateSyncServerConfig{
-		Chain:            vm.blockChain,
-		AtomicTrie:       vm.atomicTrie,
-		SyncableInterval: vm.config.StateSyncCommitInterval,
-	})
+	vm.StateSyncServer = NewStateSyncServer(
+		&stateSyncServerConfig{
+			Chain:            vm.blockChain,
+			AtomicTrie:       vm.atomicTrie,
+			SyncableInterval: vm.config.StateSyncCommitInterval,
+		},
+	)
 	return vm.initializeStateSyncClient(lastAcceptedHeight)
 }
 
 func (vm *VM) initializeMetrics() error {
-	metrics.Enabled = true
+	metrics.Enable()
 	vm.sdkMetrics = prometheus.NewRegistry()
 	gatherer := corethprometheus.NewGatherer(metrics.DefaultRegistry)
 	if err := vm.ctx.Metrics.Register(ethMetricsPrefix, gatherer); err != nil {
@@ -714,30 +722,32 @@ func (vm *VM) initializeStateSyncClient(lastAcceptedHeight uint64) error {
 		}
 	}
 
-	vm.StateSyncClient = NewStateSyncClient(&stateSyncClientConfig{
-		chain: vm.eth,
-		state: vm.State,
-		client: statesyncclient.NewClient(
-			&statesyncclient.ClientConfig{
-				NetworkClient:    vm.client,
-				Codec:            vm.networkCodec,
-				Stats:            stats.NewClientSyncerStats(),
-				StateSyncNodeIDs: stateSyncIDs,
-				BlockParser:      vm,
-			},
-		),
-		enabled:              stateSyncEnabled,
-		skipResume:           vm.config.StateSyncSkipResume,
-		stateSyncMinBlocks:   vm.config.StateSyncMinBlocks,
-		stateSyncRequestSize: vm.config.StateSyncRequestSize,
-		lastAcceptedHeight:   lastAcceptedHeight, // TODO clean up how this is passed around
-		chaindb:              vm.chaindb,
-		metadataDB:           vm.metadataDB,
-		acceptedBlockDB:      vm.acceptedBlockDB,
-		db:                   vm.versiondb,
-		atomicBackend:        vm.atomicBackend,
-		toEngine:             vm.toEngine,
-	})
+	vm.StateSyncClient = NewStateSyncClient(
+		&stateSyncClientConfig{
+			chain: vm.eth,
+			state: vm.State,
+			client: statesyncclient.NewClient(
+				&statesyncclient.ClientConfig{
+					NetworkClient:    vm.client,
+					Codec:            vm.networkCodec,
+					Stats:            stats.NewClientSyncerStats(),
+					StateSyncNodeIDs: stateSyncIDs,
+					BlockParser:      vm,
+				},
+			),
+			enabled:              stateSyncEnabled,
+			skipResume:           vm.config.StateSyncSkipResume,
+			stateSyncMinBlocks:   vm.config.StateSyncMinBlocks,
+			stateSyncRequestSize: vm.config.StateSyncRequestSize,
+			lastAcceptedHeight:   lastAcceptedHeight, // TODO clean up how this is passed around
+			chaindb:              vm.chaindb,
+			metadataDB:           vm.metadataDB,
+			acceptedBlockDB:      vm.acceptedBlockDB,
+			db:                   vm.versiondb,
+			atomicBackend:        vm.atomicBackend,
+			toEngine:             vm.toEngine,
+		},
+	)
 
 	// If StateSync is disabled, clear any ongoing summary so that we will not attempt to resume
 	// sync using a snapshot that has been modified by the node running normal operations.
@@ -774,7 +784,7 @@ func (vm *VM) initChainState(lastAcceptedBlock *types.Block) error {
 	}
 	vm.State = state
 
-	if !metrics.Enabled {
+	if !metrics.Enabled() {
 		return nil
 	}
 
@@ -788,7 +798,9 @@ func (vm *VM) createConsensusCallbacks() dummy.ConsensusCallbacks {
 	}
 }
 
-func (vm *VM) preBatchOnFinalizeAndAssemble(header *types.Header, state *state.StateDB, txs []*types.Transaction) ([]byte, *big.Int, *big.Int, error) {
+func (vm *VM) preBatchOnFinalizeAndAssemble(
+	header *types.Header, state *state.StateDB, txs []*types.Transaction,
+) ([]byte, *big.Int, *big.Int, error) {
 	for {
 		tx, exists := vm.mempool.NextTx()
 		if !exists {
@@ -818,7 +830,9 @@ func (vm *VM) preBatchOnFinalizeAndAssemble(header *types.Header, state *state.S
 		}
 		var contribution, gasUsed *big.Int
 		if rules.IsApricotPhase4 {
-			contribution, gasUsed, err = tx.BlockFeeContribution(rules.IsApricotPhase5, vm.ctx.AVAXAssetID, header.BaseFee)
+			contribution, gasUsed, err = tx.BlockFeeContribution(
+				rules.IsApricotPhase5, vm.ctx.AVAXAssetID, header.BaseFee,
+			)
 			if err != nil {
 				return nil, nil, nil, err
 			}
@@ -881,7 +895,9 @@ func (vm *VM) postBatchOnFinalizeAndAssemble(
 			return nil, nil, nil, err
 		}
 		// ensure `gasUsed + batchGasUsed` doesn't exceed `atomicGasLimit`
-		if totalGasUsed := new(big.Int).Add(batchGasUsed, txGasUsed); !utils.BigLessOrEqualUint64(totalGasUsed, atomicGasLimit) {
+		if totalGasUsed := new(big.Int).Add(batchGasUsed, txGasUsed); !utils.BigLessOrEqualUint64(
+			totalGasUsed, atomicGasLimit,
+		) {
 			// Send [tx] back to the mempool's tx heap.
 			vm.mempool.CancelCurrentTx(tx.ID())
 			break
@@ -957,7 +973,9 @@ func (vm *VM) onFinalizeAndAssemble(
 	return vm.postBatchOnFinalizeAndAssemble(header, parent, state, txs)
 }
 
-func (vm *VM) onExtraStateChange(block *types.Block, parent *types.Header, state *state.StateDB) (*big.Int, *big.Int, error) {
+func (vm *VM) onExtraStateChange(block *types.Block, parent *types.Header, state *state.StateDB) (
+	*big.Int, *big.Int, error,
+) {
 	var (
 		batchContribution *big.Int = big.NewInt(0)
 		batchGasUsed      *big.Int = big.NewInt(0)
@@ -1001,7 +1019,9 @@ func (vm *VM) onExtraStateChange(block *types.Block, parent *types.Header, state
 		}
 		// If ApricotPhase4 is enabled, calculate the block fee contribution
 		if rules.IsApricotPhase4 {
-			contribution, gasUsed, err := tx.BlockFeeContribution(rules.IsApricotPhase5, vm.ctx.AVAXAssetID, block.BaseFee())
+			contribution, gasUsed, err := tx.BlockFeeContribution(
+				rules.IsApricotPhase5, vm.ctx.AVAXAssetID, block.BaseFee(),
+			)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -1020,7 +1040,10 @@ func (vm *VM) onExtraStateChange(block *types.Block, parent *types.Header, state
 		}
 
 		if !utils.BigLessOrEqualUint64(batchGasUsed, atomicGasLimit) {
-			return nil, nil, fmt.Errorf("atomic gas used (%d) by block (%s), exceeds atomic gas limit (%d)", batchGasUsed, block.Hash().Hex(), atomicGasLimit)
+			return nil, nil, fmt.Errorf(
+				"atomic gas used (%d) by block (%s), exceeds atomic gas limit (%d)", batchGasUsed, block.Hash().Hex(),
+				atomicGasLimit,
+			)
 		}
 	}
 	return batchContribution, batchGasUsed, nil
@@ -1093,7 +1116,9 @@ func (vm *VM) initBlockBuilding() error {
 	}()
 
 	atomicTxGossipMarshaller := atomic.GossipAtomicTxMarshaller{}
-	atomicTxGossipClient := vm.Network.NewClient(p2p.AtomicTxGossipHandlerID, p2p.WithValidatorSampling(vm.p2pValidators))
+	atomicTxGossipClient := vm.Network.NewClient(
+		p2p.AtomicTxGossipHandlerID, p2p.WithValidatorSampling(vm.p2pValidators),
+	)
 	atomicTxGossipMetrics, err := gossip.NewMetrics(vm.sdkMetrics, atomicTxGossipNamespace)
 	if err != nil {
 		return fmt.Errorf("failed to initialize atomic tx gossip metrics: %w", err)
@@ -1494,7 +1519,11 @@ func (vm *VM) CreateHandlers(context.Context) (map[string]http.Handler, error) {
 	apis[avaxEndpoint] = avaxAPI
 
 	if vm.config.AdminAPIEnabled {
-		adminAPI, err := newHandler("admin", NewAdminService(vm, os.ExpandEnv(fmt.Sprintf("%s_coreth_performance_%s", vm.config.AdminAPIDir, vm.chainAlias))))
+		adminAPI, err := newHandler(
+			"admin", NewAdminService(
+				vm, os.ExpandEnv(fmt.Sprintf("%s_coreth_performance_%s", vm.config.AdminAPIDir, vm.chainAlias)),
+			),
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to register service for admin API due to %w", err)
 		}
@@ -1511,7 +1540,12 @@ func (vm *VM) CreateHandlers(context.Context) (map[string]http.Handler, error) {
 	}
 
 	if vm.config.WarpAPIEnabled {
-		if err := handler.RegisterName("warp", warp.NewAPI(vm.ctx.NetworkID, vm.ctx.SubnetID, vm.ctx.ChainID, vm.ctx.ValidatorState, vm.warpBackend, vm.client, vm.requirePrimaryNetworkSigners)); err != nil {
+		if err := handler.RegisterName(
+			"warp", warp.NewAPI(
+				vm.ctx.NetworkID, vm.ctx.SubnetID, vm.ctx.ChainID, vm.ctx.ValidatorState, vm.warpBackend, vm.client,
+				vm.requirePrimaryNetworkSigners,
+			),
+		); err != nil {
 			return nil, err
 		}
 		enabledAPIs = append(enabledAPIs, "warp")
@@ -1586,8 +1620,10 @@ func (vm *VM) ParseAddress(addrStr string) (ids.ID, ids.ShortID, error) {
 
 	expectedHRP := avalanchegoConstants.GetHRP(vm.ctx.NetworkID)
 	if hrp != expectedHRP {
-		return ids.ID{}, ids.ShortID{}, fmt.Errorf("expected hrp %q but got %q",
-			expectedHRP, hrp)
+		return ids.ID{}, ids.ShortID{}, fmt.Errorf(
+			"expected hrp %q but got %q",
+			expectedHRP, hrp,
+		)
 	}
 
 	addr, err := ids.ToShortID(addrBytes)
@@ -1607,7 +1643,9 @@ func (vm *VM) verifyTxAtTip(tx *atomic.Tx) error {
 		return err
 	}
 	if gasUsed > maxAtomicTxMempoolGas {
-		return fmt.Errorf("tx gas usage (%d) exceeds maximum allowed mempool gas usage (%d)", gasUsed, maxAtomicTxMempoolGas)
+		return fmt.Errorf(
+			"tx gas usage (%d) exceeds maximum allowed mempool gas usage (%d)", gasUsed, maxAtomicTxMempoolGas,
+		)
 	}
 
 	// Note: we fetch the current block and then the state at that block instead of the current state directly
@@ -1625,7 +1663,10 @@ func (vm *VM) verifyTxAtTip(tx *atomic.Tx) error {
 		nextBaseFee, err = customheader.EstimateNextBaseFee(vm.chainConfig, parentHeader, timestamp)
 		if err != nil {
 			// Return extremely detailed error since CalcBaseFee should never encounter an issue here
-			return fmt.Errorf("failed to calculate base fee with parent timestamp (%d), parent ExtraData: (0x%x), and current timestamp (%d): %w", parentHeader.Time, parentHeader.Extra, timestamp, err)
+			return fmt.Errorf(
+				"failed to calculate base fee with parent timestamp (%d), parent ExtraData: (0x%x), and current timestamp (%d): %w",
+				parentHeader.Time, parentHeader.Extra, timestamp, err,
+			)
 		}
 	}
 
@@ -1639,7 +1680,9 @@ func (vm *VM) verifyTxAtTip(tx *atomic.Tx) error {
 // Note: verifyTx may modify [state]. If [state] needs to be properly maintained, the caller is responsible
 // for reverting to the correct snapshot after calling this function. If this function is called with a
 // throwaway state, then this is not necessary.
-func (vm *VM) verifyTx(tx *atomic.Tx, parentHash common.Hash, baseFee *big.Int, state *state.StateDB, rules params.Rules) error {
+func (vm *VM) verifyTx(
+	tx *atomic.Tx, parentHash common.Hash, baseFee *big.Int, state *state.StateDB, rules params.Rules,
+) error {
 	parentIntf, err := vm.GetBlockInternal(context.TODO(), ids.ID(parentHash))
 	if err != nil {
 		return fmt.Errorf("failed to get parent block: %w", err)
@@ -1664,7 +1707,9 @@ func (vm *VM) verifyTx(tx *atomic.Tx, parentHash common.Hash, baseFee *big.Int, 
 
 // verifyTxs verifies that [txs] are valid to be issued into a block with parent block [parentHash]
 // using [rules] as the current rule set.
-func (vm *VM) verifyTxs(txs []*atomic.Tx, parentHash common.Hash, baseFee *big.Int, height uint64, rules params.Rules) error {
+func (vm *VM) verifyTxs(
+	txs []*atomic.Tx, parentHash common.Hash, baseFee *big.Int, height uint64, rules params.Rules,
+) error {
 	// Ensure that the parent was verified and inserted correctly.
 	if !vm.blockChain.HasBlock(parentHash, height-1) {
 		return errRejectedParent
@@ -1767,7 +1812,10 @@ func (vm *VM) startContinuousProfiler() {
 	vm.shutdownWg.Add(1)
 	go func() {
 		defer vm.shutdownWg.Done()
-		log.Info("Dispatching continuous profiler", "dir", vm.config.ContinuousProfilerDir, "freq", vm.config.ContinuousProfilerFrequency, "maxFiles", vm.config.ContinuousProfilerMaxFiles)
+		log.Info(
+			"Dispatching continuous profiler", "dir", vm.config.ContinuousProfilerDir, "freq",
+			vm.config.ContinuousProfilerFrequency, "maxFiles", vm.config.ContinuousProfilerMaxFiles,
+		)
 		err := vm.profiler.Dispatch()
 		if err != nil {
 			log.Error("continuous profiler failed", "err", err)
@@ -1792,12 +1840,16 @@ func (vm *VM) readLastAccepted() (common.Hash, uint64, error) {
 	case lastAcceptedErr != nil:
 		return common.Hash{}, 0, fmt.Errorf("failed to get last accepted block ID due to: %w", lastAcceptedErr)
 	case len(lastAcceptedBytes) != common.HashLength:
-		return common.Hash{}, 0, fmt.Errorf("last accepted bytes should have been length %d, but found %d", common.HashLength, len(lastAcceptedBytes))
+		return common.Hash{}, 0, fmt.Errorf(
+			"last accepted bytes should have been length %d, but found %d", common.HashLength, len(lastAcceptedBytes),
+		)
 	default:
 		lastAcceptedHash := common.BytesToHash(lastAcceptedBytes)
 		height := rawdb.ReadHeaderNumber(vm.chaindb, lastAcceptedHash)
 		if height == nil {
-			return common.Hash{}, 0, fmt.Errorf("failed to retrieve header number of last accepted block: %s", lastAcceptedHash)
+			return common.Hash{}, 0, fmt.Errorf(
+				"failed to retrieve header number of last accepted block: %s", lastAcceptedHash,
+			)
 		}
 		return lastAcceptedHash, *height, nil
 	}
@@ -1822,7 +1874,9 @@ func attachEthService(handler *rpc.Server, apis []rpc.API, names []string) error
 	apiSet := make(map[string]rpc.API)
 	for _, api := range apis {
 		if existingAPI, exists := apiSet[api.Name]; exists {
-			return fmt.Errorf("duplicated API name: %s, namespaces %s and %s", api.Name, api.Namespace, existingAPI.Namespace)
+			return fmt.Errorf(
+				"duplicated API name: %s, namespaces %s and %s", api.Name, api.Namespace, existingAPI.Namespace,
+			)
 		}
 		apiSet[api.Name] = api
 	}

@@ -19,10 +19,15 @@ var (
 // ethDbWrapper implements ethdb.Database
 type ethDbWrapper struct{ database.Database }
 
+func (db ethDbWrapper) DeleteRange(_, _ []byte) error {
+	// TODO implement me
+	panic("implement me")
+}
+
 func WrapDatabase(db database.Database) ethdb.KeyValueStore { return ethDbWrapper{db} }
 
 // Stat implements ethdb.Database
-func (db ethDbWrapper) Stat(string) (string, error) { return "", database.ErrNotFound }
+func (db ethDbWrapper) Stat() (string, error) { return "", database.ErrNotFound }
 
 // NewBatch implements ethdb.Database
 func (db ethDbWrapper) NewBatch() ethdb.Batch { return wrappedBatch{db.Database.NewBatch()} }
@@ -33,9 +38,10 @@ func (db ethDbWrapper) NewBatchWithSize(size int) ethdb.Batch {
 	return wrappedBatch{db.Database.NewBatch()}
 }
 
-func (db ethDbWrapper) NewSnapshot() (ethdb.Snapshot, error) {
-	return nil, ErrSnapshotNotSupported
-}
+//
+// func (db ethDbWrapper) NewSnapshot() (ethdb.Snapshot, error) {
+// 	return nil, ErrSnapshotNotSupported
+// }
 
 // NewIterator implements ethdb.Database
 //

@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/gballet/go-verkle"
+	"github.com/ethereum/go-verkle"
 	"github.com/holiman/uint256"
 )
 
@@ -54,10 +54,14 @@ func TestTreeKey(t *testing.T) {
 	if !bytes.Equal(CodeChunkKey(address, largeIndex), CodeChunkKeyWithEvaluatedAddress(addressEval, largeIndex)) {
 		t.Fatal("Unmatched code chunk key")
 	}
-	if !bytes.Equal(StorageSlotKey(address, smallStorage), StorageSlotKeyWithEvaluatedAddress(addressEval, smallStorage)) {
+	if !bytes.Equal(
+		StorageSlotKey(address, smallStorage), StorageSlotKeyWithEvaluatedAddress(addressEval, smallStorage),
+	) {
 		t.Fatal("Unmatched storage slot key")
 	}
-	if !bytes.Equal(StorageSlotKey(address, largeStorage), StorageSlotKeyWithEvaluatedAddress(addressEval, largeStorage)) {
+	if !bytes.Equal(
+		StorageSlotKey(address, largeStorage), StorageSlotKeyWithEvaluatedAddress(addressEval, largeStorage),
+	) {
 		t.Fatal("Unmatched storage slot key")
 	}
 }

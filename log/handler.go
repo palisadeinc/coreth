@@ -9,8 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"log/slog"
+
 	"github.com/holiman/uint256"
-	"golang.org/x/exp/slog"
 )
 
 type discardHandler struct{}
@@ -112,16 +113,20 @@ func (t *TerminalHandler) ResetFieldPadding() {
 
 // JSONHandler returns a handler which prints records in JSON format.
 func JSONHandler(wr io.Writer) slog.Handler {
-	return slog.NewJSONHandler(wr, &slog.HandlerOptions{
-		ReplaceAttr: builtinReplaceJSON,
-	})
+	return slog.NewJSONHandler(
+		wr, &slog.HandlerOptions{
+			ReplaceAttr: builtinReplaceJSON,
+		},
+	)
 }
 
 func JSONHandlerWithLevel(wr io.Writer, level slog.Leveler) slog.Handler {
-	return slog.NewJSONHandler(wr, &slog.HandlerOptions{
-		ReplaceAttr: builtinReplaceJSON,
-		Level:       level,
-	})
+	return slog.NewJSONHandler(
+		wr, &slog.HandlerOptions{
+			ReplaceAttr: builtinReplaceJSON,
+			Level:       level,
+		},
+	)
 }
 
 // LogfmtHandler returns a handler which prints records in logfmt format, an easy machine-parseable but human-readable
@@ -129,18 +134,22 @@ func JSONHandlerWithLevel(wr io.Writer, level slog.Leveler) slog.Handler {
 //
 // For more details see: http://godoc.org/github.com/kr/logfmt
 func LogfmtHandler(wr io.Writer) slog.Handler {
-	return slog.NewTextHandler(wr, &slog.HandlerOptions{
-		ReplaceAttr: builtinReplaceLogfmt,
-	})
+	return slog.NewTextHandler(
+		wr, &slog.HandlerOptions{
+			ReplaceAttr: builtinReplaceLogfmt,
+		},
+	)
 }
 
 // LogfmtHandlerWithLevel returns the same handler as LogfmtHandler but it only outputs
 // records which are less than or equal to the specified verbosity level.
 func LogfmtHandlerWithLevel(wr io.Writer, level slog.Leveler) slog.Handler {
-	return slog.NewTextHandler(wr, &slog.HandlerOptions{
-		ReplaceAttr: builtinReplaceLogfmt,
-		Level:       level,
-	})
+	return slog.NewTextHandler(
+		wr, &slog.HandlerOptions{
+			ReplaceAttr: builtinReplaceLogfmt,
+			Level:       level,
+		},
+	)
 }
 
 func builtinReplaceLogfmt(_ []string, attr slog.Attr) slog.Attr {

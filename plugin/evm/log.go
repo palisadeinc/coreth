@@ -10,9 +10,10 @@ import (
 	"runtime"
 	"strings"
 
+	"log/slog"
+
 	"github.com/ava-labs/coreth/log"
 	gethlog "github.com/ethereum/go-ethereum/log"
-	"golang.org/x/exp/slog"
 )
 
 type CorethLogger struct {

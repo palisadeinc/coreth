@@ -14,8 +14,8 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm/upgrade/ap4"
 	"github.com/ava-labs/coreth/plugin/evm/upgrade/ap5"
 	"github.com/ava-labs/coreth/plugin/evm/upgrade/etna"
+	"github.com/ava-labs/coreth/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
 )
 
 var (
@@ -84,7 +84,7 @@ func baseFeeFromWindow(config *params.ChainConfig, parent *types.Header, timesta
 		num.Mul(num, parent.BaseFee)
 		num.Div(num, parentGasTargetBig)
 		num.Div(num, baseFeeChangeDenominator)
-		baseFeeDelta := math.BigMax(num, common.Big1)
+		baseFeeDelta := utils.BigMax(num, common.Big1)
 
 		baseFee.Add(baseFee, baseFeeDelta)
 	} else {
@@ -93,12 +93,13 @@ func baseFeeFromWindow(config *params.ChainConfig, parent *types.Header, timesta
 		num.Mul(num, parent.BaseFee)
 		num.Div(num, parentGasTargetBig)
 		num.Div(num, baseFeeChangeDenominator)
-		baseFeeDelta := math.BigMax(num, common.Big1)
+		baseFeeDelta := utils.BigMax(num, common.Big1)
 
 		if timestamp < parent.Time {
 			// This should never happen as the fee window calculations should
 			// have already failed, but it is kept for clarity.
-			return nil, fmt.Errorf("cannot calculate base fee for timestamp %d prior to parent timestamp %d",
+			return nil, fmt.Errorf(
+				"cannot calculate base fee for timestamp %d prior to parent timestamp %d",
 				timestamp,
 				parent.Time,
 			)
@@ -161,7 +162,8 @@ func feeWindow(
 	}
 
 	if timestamp < parent.Time {
-		return ap3.Window{}, fmt.Errorf("%w: timestamp %d prior to parent timestamp %d",
+		return ap3.Window{}, fmt.Errorf(
+			"%w: timestamp %d prior to parent timestamp %d",
 			errInvalidTimestamp,
 			timestamp,
 			parent.Time,

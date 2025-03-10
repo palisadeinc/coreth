@@ -9,8 +9,8 @@ import (
 	"math/big"
 
 	"github.com/ava-labs/coreth/plugin/evm/upgrade/etna"
+	"github.com/ava-labs/coreth/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/math"
 )
 
 const (
@@ -114,12 +114,12 @@ func calculateFeeSpeeds(
 	maxFee *big.Int,
 ) feeSpeeds {
 	// Cap the fee to keep slow and normal options reasonable during fee spikes.
-	cappedFee := math.BigMin(estimate, maxFee)
+	cappedFee := utils.BigMin(estimate, maxFee)
 
 	slowFee := new(big.Int).Set(cappedFee)
 	slowFee.Mul(slowFee, bigSlowFeeNumerator)
 	slowFee.Div(slowFee, bigFeeDenominator)
-	slowFee = math.BigMax(slowFee, minFee)
+	slowFee = utils.BigMax(slowFee, minFee)
 
 	normalFee := cappedFee
 

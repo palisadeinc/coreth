@@ -32,7 +32,7 @@ import (
 	"math"
 	"time"
 
-	"golang.org/x/exp/slog"
+	"log/slog"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
@@ -73,27 +73,33 @@ func (gs *generatorStats) log(level slog.Level, msg string, root common.Hash, ma
 	case common.HashLength:
 		ctx = append(ctx, []interface{}{"at", common.BytesToHash(marker)}...)
 	case 2 * common.HashLength:
-		ctx = append(ctx, []interface{}{
-			"in", common.BytesToHash(marker[:common.HashLength]),
-			"at", common.BytesToHash(marker[common.HashLength:]),
-		}...)
+		ctx = append(
+			ctx, []interface{}{
+				"in", common.BytesToHash(marker[:common.HashLength]),
+				"at", common.BytesToHash(marker[common.HashLength:]),
+			}...,
+		)
 	}
 	// Add the usual measurements
-	ctx = append(ctx, []interface{}{
-		"accounts", gs.accounts,
-		"slots", gs.slots,
-		"storage", gs.storage,
-		"elapsed", common.PrettyDuration(time.Since(gs.start)),
-	}...)
+	ctx = append(
+		ctx, []interface{}{
+			"accounts", gs.accounts,
+			"slots", gs.slots,
+			"storage", gs.storage,
+			"elapsed", common.PrettyDuration(time.Since(gs.start)),
+		}...,
+	)
 	// Calculate the estimated indexing time based on current stats
 	if len(marker) > 0 {
 		if done := binary.BigEndian.Uint64(marker[:8]) - gs.origin; done > 0 {
 			left := math.MaxUint64 - binary.BigEndian.Uint64(marker[:8])
 
 			speed := done/uint64(time.Since(gs.start)/time.Millisecond+1) + 1 // +1s to avoid division by zero
-			ctx = append(ctx, []interface{}{
-				"eta", common.PrettyDuration(time.Duration(left/speed) * time.Millisecond),
-			}...)
+			ctx = append(
+				ctx, []interface{}{
+					"eta", common.PrettyDuration(time.Duration(left/speed) * time.Millisecond),
+				}...,
+			)
 		}
 	}
 

@@ -20,8 +20,9 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"log/slog"
+
 	"github.com/holiman/uint256"
-	"golang.org/x/exp/slog"
 )
 
 const (
@@ -88,7 +89,7 @@ func (h *TerminalHandler) format(buf []byte, r slog.Record, usecolor bool) []byt
 	b.WriteString(msg)
 
 	// try to justify the log output for short messages
-	//length := utf8.RuneCountInString(msg)
+	// length := utf8.RuneCountInString(msg)
 	length := len(msg)
 	if (r.NumAttrs()+len(h.attrs)) > 0 && length < termMsgJust {
 		b.Write(spaces[:termMsgJust-length])
@@ -108,15 +109,15 @@ func (h *TerminalHandler) formatAttributes(buf *bytes.Buffer, r slog.Record, col
 
 		if color != "" {
 			buf.WriteString(color)
-			//buf.Write(appendEscapeString(buf.AvailableBuffer(), attr.Key))
+			// buf.Write(appendEscapeString(buf.AvailableBuffer(), attr.Key))
 			buf.Write(appendEscapeString(tmp[:0], attr.Key))
 			buf.WriteString("\x1b[0m=")
 		} else {
-			//buf.Write(appendEscapeString(buf.AvailableBuffer(), attr.Key))
+			// buf.Write(appendEscapeString(buf.AvailableBuffer(), attr.Key))
 			buf.Write(appendEscapeString(tmp[:0], attr.Key))
 			buf.WriteByte('=')
 		}
-		//val := FormatSlogValue(attr.Value, true, buf.AvailableBuffer())
+		// val := FormatSlogValue(attr.Value, true, buf.AvailableBuffer())
 		val := FormatSlogValue(attr.Value, tmp[:0])
 
 		padding := h.fieldPadding[attr.Key]
@@ -137,11 +138,13 @@ func (h *TerminalHandler) formatAttributes(buf *bytes.Buffer, r slog.Record, col
 		writeAttr(attr, n == 0, n == nAttrs-1)
 		n++
 	}
-	r.Attrs(func(attr slog.Attr) bool {
-		writeAttr(attr, n == 0, n == nAttrs-1)
-		n++
-		return true
-	})
+	r.Attrs(
+		func(attr slog.Attr) bool {
+			writeAttr(attr, n == 0, n == nAttrs-1)
+			n++
+			return true
+		},
+	)
 	buf.WriteByte('\n')
 }
 

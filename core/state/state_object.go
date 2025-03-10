@@ -31,13 +31,11 @@ import (
 	"fmt"
 	"io"
 	"math/big"
-	"time"
 
 	"github.com/ava-labs/coreth/core/types"
 	"github.com/ava-labs/coreth/trie/trienode"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/holiman/uint256"
 )
@@ -45,7 +43,7 @@ import (
 type Code []byte
 
 func (c Code) String() string {
-	return string(c) //strings.Join(Disassemble(c), " ")
+	return string(c) // strings.Join(Disassemble(c), " ")
 }
 
 type Storage map[common.Hash]common.Hash
@@ -104,7 +102,9 @@ type stateObject struct {
 
 // empty returns whether the account is considered empty.
 func (s *stateObject) empty() bool {
-	return s.data.Nonce == 0 && s.data.Balance.IsZero() && bytes.Equal(s.data.CodeHash, types.EmptyCodeHash.Bytes()) && !s.data.IsMultiCoin
+	return s.data.Nonce == 0 && s.data.Balance.IsZero() && bytes.Equal(
+		s.data.CodeHash, types.EmptyCodeHash.Bytes(),
+	) && !s.data.IsMultiCoin
 }
 
 // newObject creates a state object.
@@ -139,9 +139,11 @@ func (s *stateObject) markSelfdestructed() {
 }
 
 func (s *stateObject) touch() {
-	s.db.journal.append(touchChange{
-		account: &s.address,
-	})
+	s.db.journal.append(
+		touchChange{
+			account: &s.address,
+		},
+	)
 	if s.address == ripemd {
 		// Explicitly put it in the dirty-cache, which is otherwise generated from
 		// flattened journals.
@@ -206,11 +208,8 @@ func (s *stateObject) GetCommittedState(key common.Hash) common.Hash {
 		value common.Hash
 	)
 	if s.db.snap != nil {
-		start := time.Now()
+		// start := time.Now()
 		enc, err = s.db.snap.Storage(s.addrHash, crypto.Keccak256Hash(key.Bytes()))
-		if metrics.EnabledExpensive {
-			s.db.SnapshotStorageReads += time.Since(start)
-		}
 		if len(enc) > 0 {
 			_, content, _, err := rlp.Split(enc)
 			if err != nil {
@@ -221,16 +220,13 @@ func (s *stateObject) GetCommittedState(key common.Hash) common.Hash {
 	}
 	// If the snapshot is unavailable or reading from it fails, load from the database.
 	if s.db.snap == nil || err != nil {
-		start := time.Now()
+		// start := time.Now()
 		tr, err := s.getTrie()
 		if err != nil {
 			s.db.setError(err)
 			return common.Hash{}
 		}
 		val, err := tr.GetStorage(s.address, key.Bytes())
-		if metrics.EnabledExpensive {
-			s.db.StorageReads += time.Since(start)
-		}
 		if err != nil {
 			s.db.setError(err)
 			return common.Hash{}
@@ -249,11 +245,13 @@ func (s *stateObject) SetState(key, value common.Hash) {
 		return
 	}
 	// New value is different, update and journal the change
-	s.db.journal.append(storageChange{
-		account:  &s.address,
-		key:      key,
-		prevalue: prev,
-	})
+	s.db.journal.append(
+		storageChange{
+			account:  &s.address,
+			key:      key,
+			prevalue: prev,
+		},
+	)
 	s.setState(key, value)
 }
 
@@ -294,9 +292,9 @@ func (s *stateObject) updateTrie() (Trie, error) {
 		return s.trie, nil
 	}
 	// Track the amount of time wasted on updating the storage trie
-	if metrics.EnabledExpensive {
-		defer func(start time.Time) { s.db.StorageUpdates += time.Since(start) }(time.Now())
-	}
+	// if metrics.EnabledExpensive {
+	// 	defer func(start time.Time) { s.db.StorageUpdates += time.Since(start) }(time.Now())
+	// }
 	// The snapshot storage map for the object
 	var (
 		storage map[common.Hash][]byte
@@ -381,9 +379,9 @@ func (s *stateObject) updateRoot() {
 		return
 	}
 	// Track the amount of time wasted on hashing the storage trie
-	if metrics.EnabledExpensive {
-		defer func(start time.Time) { s.db.StorageHashes += time.Since(start) }(time.Now())
-	}
+	// if metrics.EnabledExpensive {
+	// 	defer func(start time.Time) { s.db.StorageHashes += time.Since(start) }(time.Now())
+	// }
 	s.data.Root = tr.Hash()
 }
 
@@ -397,9 +395,9 @@ func (s *stateObject) commit() (*trienode.NodeSet, error) {
 		return nil, nil
 	}
 	// Track the amount of time wasted on committing the storage trie
-	if metrics.EnabledExpensive {
-		defer func(start time.Time) { s.db.StorageCommits += time.Since(start) }(time.Now())
-	}
+	// if metrics.EnabledExpensive {
+	// 	defer func(start time.Time) { s.db.StorageCommits += time.Since(start) }(time.Now())
+	// }
 	// The trie is currently in an open state and could potentially contain
 	// cached mutations. Call commit to acquire a set of nodes that have been
 	// modified, the set can be nil if nothing to commit.
@@ -438,10 +436,12 @@ func (s *stateObject) SubBalance(amount *uint256.Int) {
 }
 
 func (s *stateObject) SetBalance(amount *uint256.Int) {
-	s.db.journal.append(balanceChange{
-		account: &s.address,
-		prev:    new(uint256.Int).Set(s.data.Balance),
-	})
+	s.db.journal.append(
+		balanceChange{
+			account: &s.address,
+			prev:    new(uint256.Int).Set(s.data.Balance),
+		},
+	)
 	s.setBalance(amount)
 }
 
@@ -546,11 +546,13 @@ func (s *stateObject) CodeSize() int {
 
 func (s *stateObject) SetCode(codeHash common.Hash, code []byte) {
 	prevcode := s.Code()
-	s.db.journal.append(codeChange{
-		account:  &s.address,
-		prevhash: s.CodeHash(),
-		prevcode: prevcode,
-	})
+	s.db.journal.append(
+		codeChange{
+			account:  &s.address,
+			prevhash: s.CodeHash(),
+			prevcode: prevcode,
+		},
+	)
 	s.setCode(codeHash, code)
 }
 
@@ -561,10 +563,12 @@ func (s *stateObject) setCode(codeHash common.Hash, code []byte) {
 }
 
 func (s *stateObject) SetNonce(nonce uint64) {
-	s.db.journal.append(nonceChange{
-		account: &s.address,
-		prev:    s.data.Nonce,
-	})
+	s.db.journal.append(
+		nonceChange{
+			account: &s.address,
+			prev:    s.data.Nonce,
+		},
+	)
 	s.setNonce(nonce)
 }
 
@@ -605,9 +609,11 @@ func (s *stateObject) EnableMultiCoin() bool {
 	if s.data.IsMultiCoin {
 		return false
 	}
-	s.db.journal.append(multiCoinEnable{
-		account: &s.address,
-	})
+	s.db.journal.append(
+		multiCoinEnable{
+			account: &s.address,
+		},
+	)
 	s.enableMultiCoin()
 	return true
 }

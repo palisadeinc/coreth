@@ -47,9 +47,9 @@ type StackTrieOptions struct {
 	Writer  func(path []byte, hash common.Hash, blob []byte) // The function to commit the dirty nodes
 	Cleaner func(path []byte)                                // The function to clean up dangling nodes
 
-	SkipLeftBoundary  bool          // Flag whether the nodes on the left boundary are skipped for committing
-	SkipRightBoundary bool          // Flag whether the nodes on the right boundary are skipped for committing
-	boundaryGauge     metrics.Gauge // Gauge to track how many boundary nodes are met
+	SkipLeftBoundary  bool           // Flag whether the nodes on the left boundary are skipped for committing
+	SkipRightBoundary bool           // Flag whether the nodes on the right boundary are skipped for committing
+	boundaryGauge     *metrics.Gauge // Gauge to track how many boundary nodes are met
 }
 
 // NewStackTrieOptions initializes an empty options for stackTrie.
@@ -70,7 +70,7 @@ func (o *StackTrieOptions) WithCleaner(cleaner func(path []byte)) *StackTrieOpti
 // WithSkipBoundary configures whether the left and right boundary nodes are
 // filtered for committing, along with a gauge metrics to track how many
 // boundary nodes are met.
-func (o *StackTrieOptions) WithSkipBoundary(skipLeft, skipRight bool, gauge metrics.Gauge) *StackTrieOptions {
+func (o *StackTrieOptions) WithSkipBoundary(skipLeft, skipRight bool, gauge *metrics.Gauge) *StackTrieOptions {
 	o.SkipLeftBoundary = skipLeft
 	o.SkipRightBoundary = skipRight
 	o.boundaryGauge = gauge

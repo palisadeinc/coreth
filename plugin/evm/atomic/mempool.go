@@ -35,12 +35,12 @@ var (
 
 // mempoolMetrics defines the metrics for the atomic mempool
 type mempoolMetrics struct {
-	pendingTxs metrics.Gauge // Gauge of currently pending transactions in the txHeap
-	currentTxs metrics.Gauge // Gauge of current transactions to be issued into a block
-	issuedTxs  metrics.Gauge // Gauge of transactions that have been issued into a block
+	pendingTxs *metrics.Gauge // Gauge of currently pending transactions in the txHeap
+	currentTxs *metrics.Gauge // Gauge of current transactions to be issued into a block
+	issuedTxs  *metrics.Gauge // Gauge of transactions that have been issued into a block
 
-	addedTxs     metrics.Counter // Count of all transactions added to the mempool
-	discardedTxs metrics.Counter // Count of all discarded transactions
+	addedTxs     *metrics.Counter // Count of all transactions added to the mempool
+	discardedTxs *metrics.Counter // Count of all discarded transactions
 }
 
 // newMempoolMetrics constructs metrics for the atomic mempool
@@ -85,8 +85,11 @@ type Mempool struct {
 }
 
 // NewMempool returns a Mempool with [maxSize]
-func NewMempool(ctx *snow.Context, registerer prometheus.Registerer, maxSize int, verify func(tx *Tx) error) (*Mempool, error) {
-	bloom, err := gossip.NewBloomFilter(registerer, "atomic_mempool_bloom_filter",
+func NewMempool(ctx *snow.Context, registerer prometheus.Registerer, maxSize int, verify func(tx *Tx) error) (
+	*Mempool, error,
+) {
+	bloom, err := gossip.NewBloomFilter(
+		registerer, "atomic_mempool_bloom_filter",
 		config.TxGossipBloomMinTargetElements,
 		config.TxGossipBloomTargetFalsePositiveRate,
 		config.TxGossipBloomResetFalsePositiveRate,
@@ -164,7 +167,8 @@ func (m *Mempool) AddRemoteTx(tx *Tx) error {
 		// so that they won't be requested again
 		txID := tx.ID()
 		m.discardedTxs.Put(tx.ID(), tx)
-		log.Debug("failed to issue remote tx to mempool",
+		log.Debug(
+			"failed to issue remote tx to mempool",
 			"txID", txID,
 			"err", err,
 		)
@@ -213,7 +217,9 @@ func (m *Mempool) checkConflictTx(tx *Tx) (uint64, ids.ID, []*Tx, error) {
 		conflictTxGasPrice, err := m.atomicTxGasPrice(conflictTx)
 		// Should never error to calculate the gas price of a transaction already in the mempool
 		if err != nil {
-			return 0, ids.ID{}, conflictingTxs, fmt.Errorf("failed to re-calculate gas price for conflict tx due to: %w", err)
+			return 0, ids.ID{}, conflictingTxs, fmt.Errorf(
+				"failed to re-calculate gas price for conflict tx due to: %w", err,
+			)
 		}
 		if highestGasPrice < conflictTxGasPrice {
 			highestGasPrice = conflictTxGasPrice

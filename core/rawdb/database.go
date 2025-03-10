@@ -156,8 +156,10 @@ func NewLevelDBDatabase(file string, cache int, handles int, namespace string, r
 
 // NewPebbleDBDatabase creates a persistent key-value database without a freezer
 // moving immutable chain segments into cold storage.
-func NewPebbleDBDatabase(file string, cache int, handles int, namespace string, readonly, ephemeral bool) (ethdb.Database, error) {
-	db, err := pebble.New(file, cache, handles, namespace, readonly, ephemeral)
+func NewPebbleDBDatabase(file string, cache int, handles int, namespace string, readonly, _ bool) (
+	ethdb.Database, error,
+) {
+	db, err := pebble.New(file, cache, handles, namespace, readonly)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +216,9 @@ func openKeyValueDatabase(o OpenOptions) (ethdb.Database, error) {
 	// as long as there's no conflict between the two types
 	existingDb := PreexistingDatabase(o.Directory)
 	if len(existingDb) != 0 && len(o.Type) != 0 && o.Type != existingDb {
-		return nil, fmt.Errorf("db.engine choice was %v but found pre-existing %v database in specified data directory", o.Type, existingDb)
+		return nil, fmt.Errorf(
+			"db.engine choice was %v but found pre-existing %v database in specified data directory", o.Type, existingDb,
+		)
 	}
 	if o.Type == dbPebble || existingDb == dbPebble {
 		log.Info("Using pebble as the backing database")
@@ -350,7 +354,9 @@ func InspectDatabase(db ethdb.Database, keyPrefix, keyStart []byte) error {
 			txLookups.Add(size)
 		case bytes.HasPrefix(key, SnapshotAccountPrefix) && len(key) == (len(SnapshotAccountPrefix)+common.HashLength):
 			accountSnaps.Add(size)
-		case bytes.HasPrefix(key, SnapshotStoragePrefix) && len(key) == (len(SnapshotStoragePrefix)+2*common.HashLength):
+		case bytes.HasPrefix(
+			key, SnapshotStoragePrefix,
+		) && len(key) == (len(SnapshotStoragePrefix)+2*common.HashLength):
 			storageSnaps.Add(size)
 		case bytes.HasPrefix(key, PreimagePrefix) && len(key) == (len(PreimagePrefix)+common.HashLength):
 			preimages.Add(size)
@@ -459,4 +465,4 @@ func ClearPrefix(db ethdb.KeyValueStore, prefix []byte, keyLen int) error {
 	return batch.Write()
 }
 
-/// TODO: Consider adding ReadChainMetadata
+// / TODO: Consider adding ReadChainMetadata

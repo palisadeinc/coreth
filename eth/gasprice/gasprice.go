@@ -39,9 +39,9 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm/upgrade/acp176"
 	"github.com/ava-labs/coreth/plugin/evm/upgrade/ap3"
 	"github.com/ava-labs/coreth/rpc"
+	"github.com/ava-labs/coreth/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/lru"
-	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	"golang.org/x/exp/slices"
@@ -141,15 +141,22 @@ func NewOracle(backend OracleBackend, config Config) (*Oracle, error) {
 	percent := config.Percentile
 	if percent < 0 {
 		percent = 0
-		log.Warn("Sanitizing invalid gasprice oracle sample percentile", "provided", config.Percentile, "updated", percent)
+		log.Warn(
+			"Sanitizing invalid gasprice oracle sample percentile", "provided", config.Percentile, "updated", percent,
+		)
 	} else if percent > 100 {
 		percent = 100
-		log.Warn("Sanitizing invalid gasprice oracle sample percentile", "provided", config.Percentile, "updated", percent)
+		log.Warn(
+			"Sanitizing invalid gasprice oracle sample percentile", "provided", config.Percentile, "updated", percent,
+		)
 	}
 	maxLookbackSeconds := config.MaxLookbackSeconds
 	if maxLookbackSeconds <= 0 {
 		maxLookbackSeconds = DefaultMaxLookbackSeconds
-		log.Warn("Sanitizing invalid gasprice oracle max block seconds", "provided", config.MaxLookbackSeconds, "updated", maxLookbackSeconds)
+		log.Warn(
+			"Sanitizing invalid gasprice oracle max block seconds", "provided", config.MaxLookbackSeconds, "updated",
+			maxLookbackSeconds,
+		)
 	}
 	maxPrice := config.MaxPrice
 	if maxPrice == nil || maxPrice.Int64() <= 0 {
@@ -164,17 +171,25 @@ func NewOracle(backend OracleBackend, config Config) (*Oracle, error) {
 	minGasUsed := config.MinGasUsed
 	if minGasUsed == nil || minGasUsed.Int64() < 0 {
 		minGasUsed = DefaultMinGasUsed
-		log.Warn("Sanitizing invalid gasprice oracle min gas used", "provided", config.MinGasUsed, "updated", minGasUsed)
+		log.Warn(
+			"Sanitizing invalid gasprice oracle min gas used", "provided", config.MinGasUsed, "updated", minGasUsed,
+		)
 	}
 	maxCallBlockHistory := config.MaxCallBlockHistory
 	if maxCallBlockHistory < 1 {
 		maxCallBlockHistory = DefaultMaxCallBlockHistory
-		log.Warn("Sanitizing invalid gasprice oracle max call block history", "provided", config.MaxCallBlockHistory, "updated", maxCallBlockHistory)
+		log.Warn(
+			"Sanitizing invalid gasprice oracle max call block history", "provided", config.MaxCallBlockHistory,
+			"updated", maxCallBlockHistory,
+		)
 	}
 	maxBlockHistory := config.MaxBlockHistory
 	if maxBlockHistory < 1 {
 		maxBlockHistory = DefaultMaxBlockHistory
-		log.Warn("Sanitizing invalid gasprice oracle max block history", "provided", config.MaxBlockHistory, "updated", maxBlockHistory)
+		log.Warn(
+			"Sanitizing invalid gasprice oracle max block history", "provided", config.MaxBlockHistory, "updated",
+			maxBlockHistory,
+		)
 	}
 
 	cache := lru.NewCache[uint64, *slimBlock](DefaultFeeHistoryCacheSize)
@@ -231,7 +246,7 @@ func (oracle *Oracle) EstimateBaseFee(ctx context.Context) (*big.Int, error) {
 		return nil, nil
 	}
 
-	baseFee = math.BigMin(baseFee, nextBaseFee)
+	baseFee = utils.BigMin(baseFee, nextBaseFee)
 	return baseFee, nil
 }
 
@@ -275,7 +290,7 @@ func (oracle *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	// Separately from checking the error value, check that [nextBaseFee] is non-nil
 	// before attempting to take the minimum.
 	if nextBaseFee != nil {
-		baseFee = math.BigMin(baseFee, nextBaseFee)
+		baseFee = utils.BigMin(baseFee, nextBaseFee)
 	}
 
 	return new(big.Int).Add(tip, baseFee), nil

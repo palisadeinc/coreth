@@ -37,36 +37,48 @@ func newNetworkHandler(
 	warpBackend warp.Backend,
 	networkCodec codec.Manager,
 ) message.RequestHandler {
-	syncStats := syncStats.NewHandlerStats(metrics.Enabled)
+	stats := syncStats.NewHandlerStats(metrics.Enabled())
 	return &networkHandler{
-		stateTrieLeafsRequestHandler:  syncHandlers.NewLeafsRequestHandler(evmTrieDB, provider, networkCodec, syncStats),
-		atomicTrieLeafsRequestHandler: syncHandlers.NewLeafsRequestHandler(atomicTrieDB, nil, networkCodec, syncStats),
-		blockRequestHandler:           syncHandlers.NewBlockRequestHandler(provider, networkCodec, syncStats),
-		codeRequestHandler:            syncHandlers.NewCodeRequestHandler(diskDB, networkCodec, syncStats),
+		stateTrieLeafsRequestHandler:  syncHandlers.NewLeafsRequestHandler(evmTrieDB, provider, networkCodec, stats),
+		atomicTrieLeafsRequestHandler: syncHandlers.NewLeafsRequestHandler(atomicTrieDB, nil, networkCodec, stats),
+		blockRequestHandler:           syncHandlers.NewBlockRequestHandler(provider, networkCodec, stats),
+		codeRequestHandler:            syncHandlers.NewCodeRequestHandler(diskDB, networkCodec, stats),
 		signatureRequestHandler:       warpHandlers.NewSignatureRequestHandler(warpBackend, networkCodec),
 	}
 }
 
-func (n networkHandler) HandleStateTrieLeafsRequest(ctx context.Context, nodeID ids.NodeID, requestID uint32, leafsRequest message.LeafsRequest) ([]byte, error) {
+func (n networkHandler) HandleStateTrieLeafsRequest(
+	ctx context.Context, nodeID ids.NodeID, requestID uint32, leafsRequest message.LeafsRequest,
+) ([]byte, error) {
 	return n.stateTrieLeafsRequestHandler.OnLeafsRequest(ctx, nodeID, requestID, leafsRequest)
 }
 
-func (n networkHandler) HandleAtomicTrieLeafsRequest(ctx context.Context, nodeID ids.NodeID, requestID uint32, leafsRequest message.LeafsRequest) ([]byte, error) {
+func (n networkHandler) HandleAtomicTrieLeafsRequest(
+	ctx context.Context, nodeID ids.NodeID, requestID uint32, leafsRequest message.LeafsRequest,
+) ([]byte, error) {
 	return n.atomicTrieLeafsRequestHandler.OnLeafsRequest(ctx, nodeID, requestID, leafsRequest)
 }
 
-func (n networkHandler) HandleBlockRequest(ctx context.Context, nodeID ids.NodeID, requestID uint32, blockRequest message.BlockRequest) ([]byte, error) {
+func (n networkHandler) HandleBlockRequest(
+	ctx context.Context, nodeID ids.NodeID, requestID uint32, blockRequest message.BlockRequest,
+) ([]byte, error) {
 	return n.blockRequestHandler.OnBlockRequest(ctx, nodeID, requestID, blockRequest)
 }
 
-func (n networkHandler) HandleCodeRequest(ctx context.Context, nodeID ids.NodeID, requestID uint32, codeRequest message.CodeRequest) ([]byte, error) {
+func (n networkHandler) HandleCodeRequest(
+	ctx context.Context, nodeID ids.NodeID, requestID uint32, codeRequest message.CodeRequest,
+) ([]byte, error) {
 	return n.codeRequestHandler.OnCodeRequest(ctx, nodeID, requestID, codeRequest)
 }
 
-func (n networkHandler) HandleMessageSignatureRequest(ctx context.Context, nodeID ids.NodeID, requestID uint32, messageSignatureRequest message.MessageSignatureRequest) ([]byte, error) {
+func (n networkHandler) HandleMessageSignatureRequest(
+	ctx context.Context, nodeID ids.NodeID, requestID uint32, messageSignatureRequest message.MessageSignatureRequest,
+) ([]byte, error) {
 	return n.signatureRequestHandler.OnMessageSignatureRequest(ctx, nodeID, requestID, messageSignatureRequest)
 }
 
-func (n networkHandler) HandleBlockSignatureRequest(ctx context.Context, nodeID ids.NodeID, requestID uint32, blockSignatureRequest message.BlockSignatureRequest) ([]byte, error) {
+func (n networkHandler) HandleBlockSignatureRequest(
+	ctx context.Context, nodeID ids.NodeID, requestID uint32, blockSignatureRequest message.BlockSignatureRequest,
+) ([]byte, error) {
 	return n.signatureRequestHandler.OnBlockSignatureRequest(ctx, nodeID, requestID, blockSignatureRequest)
 }

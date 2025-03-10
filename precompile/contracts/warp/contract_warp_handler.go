@@ -6,6 +6,8 @@ package warp
 import (
 	"fmt"
 
+	"math"
+
 	"github.com/ava-labs/avalanchego/utils/set"
 	"github.com/ava-labs/avalanchego/vms/platformvm/warp"
 	"github.com/ava-labs/avalanchego/vms/platformvm/warp/payload"
@@ -13,7 +15,7 @@ import (
 	"github.com/ava-labs/coreth/predicate"
 	"github.com/ava-labs/coreth/vmerrs"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
+	gomath "github.com/ethereum/go-ethereum/common/math"
 )
 
 var (
@@ -45,7 +47,9 @@ type messageHandler interface {
 	handleMessage(msg *warp.Message) ([]byte, error)
 }
 
-func handleWarpMessage(accessibleState contract.AccessibleState, input []byte, suppliedGas uint64, handler messageHandler) ([]byte, uint64, error) {
+func handleWarpMessage(
+	accessibleState contract.AccessibleState, input []byte, suppliedGas uint64, handler messageHandler,
+) ([]byte, uint64, error) {
 	remainingGas, err := contract.DeductGas(suppliedGas, GetVerifiedWarpMessageBaseCost)
 	if err != nil {
 		return nil, remainingGas, err
@@ -69,7 +73,7 @@ func handleWarpMessage(accessibleState contract.AccessibleState, input []byte, s
 
 	// Note: we charge for the size of the message during both predicate verification and each time the message is read during
 	// EVM execution because each execution incurs an additional read cost.
-	msgBytesGas, overflow := math.SafeMul(GasCostPerWarpMessageBytes, uint64(len(predicateBytes)))
+	msgBytesGas, overflow := gomath.SafeMul(GasCostPerWarpMessageBytes, uint64(len(predicateBytes)))
 	if overflow {
 		return nil, 0, vmerrs.ErrOutOfGas
 	}
@@ -104,14 +108,16 @@ func (addressedPayloadHandler) handleMessage(warpMessage *warp.Message) ([]byte,
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", errInvalidAddressedPayload, err)
 	}
-	return PackGetVerifiedWarpMessageOutput(GetVerifiedWarpMessageOutput{
-		Message: WarpMessage{
-			SourceChainID:       common.Hash(warpMessage.SourceChainID),
-			OriginSenderAddress: common.BytesToAddress(addressedPayload.SourceAddress),
-			Payload:             addressedPayload.Payload,
+	return PackGetVerifiedWarpMessageOutput(
+		GetVerifiedWarpMessageOutput{
+			Message: WarpMessage{
+				SourceChainID:       common.Hash(warpMessage.SourceChainID),
+				OriginSenderAddress: common.BytesToAddress(addressedPayload.SourceAddress),
+				Payload:             addressedPayload.Payload,
+			},
+			Valid: true,
 		},
-		Valid: true,
-	})
+	)
 }
 
 type blockHashHandler struct{}
@@ -125,11 +131,13 @@ func (blockHashHandler) handleMessage(warpMessage *warp.Message) ([]byte, error)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", errInvalidBlockHashPayload, err)
 	}
-	return PackGetVerifiedWarpBlockHashOutput(GetVerifiedWarpBlockHashOutput{
-		WarpBlockHash: WarpBlockHash{
-			SourceChainID: common.Hash(warpMessage.SourceChainID),
-			BlockHash:     common.BytesToHash(blockHashPayload.Hash[:]),
+	return PackGetVerifiedWarpBlockHashOutput(
+		GetVerifiedWarpBlockHashOutput{
+			WarpBlockHash: WarpBlockHash{
+				SourceChainID: common.Hash(warpMessage.SourceChainID),
+				BlockHash:     common.BytesToHash(blockHashPayload.Hash[:]),
+			},
+			Valid: true,
 		},
-		Valid: true,
-	})
+	)
 }
